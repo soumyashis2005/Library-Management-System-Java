@@ -89,6 +89,6 @@ Java Documentation
 
 ---
 
-📜 License
+## 📜 License
 
 This project is for educational use only.
