@@ -150,25 +150,29 @@ public class ReturnBook extends javax.swing.JFrame {
 
     private void btnreturnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnreturnActionPerformed
     if(txtstudentid.getText().equals("")){
-        JOptionPane.showMessageDialog(this, "Please enter student id and searc it");
+        JOptionPane.showMessageDialog(this, "Please enter student id and search it");
         txtstudentid.requestFocus();
     }
     else{
         try {
-            pst = con.prepareStatement("UPDATE BOOK SET STATUS = ?, ISSUEDATE = ?, DUEDATE = ?, STUDENTID = ? WHERE BOOK.ID = ?");
-            pst.setString(1, "ISSUED");
-            pst.setString(2, "");
-            pst.setString(3, "");
-            pst.setString(4, "");
-            pst.setString(5, txtbookid.getText());
+            pst = con.prepareStatement(
+                    "UPDATE book SET status = ?, issuedate = NULL, duedate = NULL, studentid = NULL WHERE id = ?"
+            );
+
+            pst.setString(1, "AVAILABLE");
+            pst.setString(2, txtbookid.getText());
             pst.executeUpdate();
-            JOptionPane.showMessageDialog(this, "BOOK RETURNED");
-            txtissuedate.setText("");
-            txtbookid.setText("");
-            txtbookname.setText("");
+
+            JOptionPane.showMessageDialog(this, "Book Returned Successfully");
+
+// Clear fields
             txtstudentid.setText("");
             txtstudentname.setText("");
+            txtbookid.setText("");
+            txtbookname.setText("");
+            txtissuedate.setText("");
             txtduedate.setText("");
+
         } catch (SQLException ex) {
             Logger.getLogger(ReturnBook.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -181,25 +185,31 @@ public class ReturnBook extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
     if(txtstudentid.getText().equals("")){
-        JOptionPane.showMessageDialog(this, "Please enter student id and searc it");
+        JOptionPane.showMessageDialog(this, "Please enter student id and search it");
         txtstudentid.requestFocus();
     }
     else {
         try {
-            pst = con.prepareStatement("select student.id, student.name, book.id, book.name, book.issuedate, book.duedate from book inner join student using (id) where book.id = ?");
+            pst = con.prepareStatement(
+                    "SELECT student.id, student.name, book.id, book.name, book.issuedate, book.duedate "
+                    + "FROM book INNER JOIN student ON book.studentid = student.id "
+                    + "WHERE student.id = ? AND book.status = 'ISSUED'"
+            );
+
             pst.setString(1, txtstudentid.getText());
             rs = pst.executeQuery();
-            if(rs.next()){
-                txtbookid.setText(rs.getString(2));
-                txtstudentname.setText(rs.getString(1));
-                txtduedate.setText(rs.getString(5));
-                txtbookname.setText(rs.getString(3));
-                txtissuedate.setText(rs.getString(4));
-                
+
+            if (rs.next()) {
+                txtstudentid.setText(rs.getString(1));
+                txtstudentname.setText(rs.getString(2));
+                txtbookid.setText(rs.getString(3));
+                txtbookname.setText(rs.getString(4));
+                txtissuedate.setText(rs.getString(5));
+                txtduedate.setText(rs.getString(6));
+            } else {
+                JOptionPane.showMessageDialog(this, "No issued book found for this student");
             }
-            else{
-                JOptionPane.showMessageDialog(this, "Please enter valid student id");
-            }
+
         } catch (SQLException ex) {
             Logger.getLogger(ReturnBook.class.getName()).log(Level.SEVERE, null, ex);
         }

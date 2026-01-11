@@ -142,6 +142,7 @@ public class IssueBook extends javax.swing.JFrame {
 
         jLabel7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/All Page Backgraound.jpg"))); // NOI18N
         jLabel7.setText("jLabel7");
+        jLabel7.setName(""); // NOI18N
         getContentPane().add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1140, 770));
 
         pack();
@@ -152,27 +153,93 @@ public class IssueBook extends javax.swing.JFrame {
     }//GEN-LAST:event_txtduedateActionPerformed
 
     private void btnissueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnissueActionPerformed
-    if(txtbookid.getText().equals("")){
-        JOptionPane.showMessageDialog(this, "Please enter book id and search it");
-        txtbookid.requestFocus();
+    // 1️⃣ Validate empty fields
+    if (txtbookid.getText().isEmpty() ||
+        txtstudentid.getText().isEmpty() ||
+        txtduedate.getText().isEmpty()) {
+
+        JOptionPane.showMessageDialog(this, "Please fill all fields");
+        return;
     }
-    else{
-        try {
-            pst = con.prepareStatement("UPDATE BOOK SET STATUS = ?,ISSUEDATE = ?, DUEDATE = ?, STUDENTID = ?");
-            pst.setString(1, "ISSUED");
-            pst.setString(2, txtissue.getText());
-            pst.setString(3, txtduedate.getText());
-            pst.setString(4, txtstudentid.getText());
-            pst.executeUpdate();
-            
-            JOptionPane.showMessageDialog(this, "Book Issued");
+    
+    // 2️⃣ DUE DATE FORMAT VALIDATION  ← ADD THIS HERE
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+    sdf.setLenient(false);
+
+    try {
+        Date due = sdf.parse(txtduedate.getText());
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Invalid Due Date format (dd/MM/yyyy)");
+        return;
+    }
+    
+    try {
+        // 2️⃣ Check if book exists and its status
+        pst = con.prepareStatement("SELECT status FROM book WHERE id = ?");
+        pst.setString(1, txtbookid.getText());
+        rs = pst.executeQuery();
+
+        if (!rs.next()) {
+            JOptionPane.showMessageDialog(this, "Invalid Book ID");
+            return;
+        }
+
+        if ("ISSUED".equals(rs.getString("status"))) {
+            JOptionPane.showMessageDialog(this, "Book already issued!");
+            return;
+        }
+
+        // 3️⃣ Check if student exists
+        pst = con.prepareStatement("SELECT id FROM student WHERE id = ?");
+        pst.setString(1, txtstudentid.getText());
+        rs = pst.executeQuery();
+
+        if (!rs.next()) {
+            JOptionPane.showMessageDialog(this, "Invalid Student ID");
+            return;
+        }
+
+        // 4️⃣ Issue the book
+        pst = con.prepareStatement(
+            "UPDATE book SET status = ?, issuedate = ?, duedate = ?, studentid = ? WHERE id = ?"
+        );
+
+        pst.setString(1, "ISSUED");
+        pst.setString(2, txtissue.getText());
+        pst.setString(3, txtduedate.getText());
+        pst.setString(4, txtstudentid.getText());
+        pst.setString(5, txtbookid.getText());
+
+        int updated = pst.executeUpdate();
+
+        if (updated > 0) {
+            JOptionPane.showMessageDialog(this, "Book Issued Successfully");
+
+            // Clear fields
             txtbookid.setText("");
             txtbookname.setText("");
             txtstudentid.setText("");
-            txtissue.setText("");
             txtduedate.setText("");
-        } catch (SQLException ex) {
-            System.getLogger(IssueBook.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+
+            // Reset issue date to today
+            txtissue.setText(
+                new java.text.SimpleDateFormat("dd/MM/yyyy")
+                        .format(new java.util.Date())
+            );
+        } else {
+            JOptionPane.showMessageDialog(this, "Issue failed. Please try again.");
+        }
+
+    } catch (SQLException ex) {
+        Logger.getLogger(IssueBook.class.getName())
+              .log(Level.SEVERE, null, ex);
+    }finally {
+        // ✅ ADD IT HERE (THIS IS THE PLACE)
+        try {
+            if (rs != null) rs.close();
+            if (pst != null) pst.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
     }//GEN-LAST:event_btnissueActionPerformed
@@ -184,11 +251,11 @@ if(txtbookid.getText().equals("")){
 }    
 else{
     try {
-        pst=con.prepareStatement("SELECT * FROM BOOK WHERE ID=?");
+        pst = con.prepareStatement("SELECT name FROM book WHERE id=?");
         pst.setString(1, txtbookid.getText());
         rs=pst.executeQuery();
         if(rs.next()){
-         txtbookname.setText(rs.getString(2));   
+         txtbookname.setText(rs.getString("name"));   
         }
     } catch (SQLException ex) {
         Logger.getLogger(IssueBook.class.getName()).log(Level.SEVERE, null, ex);
