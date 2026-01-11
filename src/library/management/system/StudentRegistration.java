@@ -12,6 +12,9 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 import library.management.system.Connect;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLIntegrityConstraintViolationException;
+
 
 /**
  *
@@ -127,51 +130,79 @@ public class StudentRegistration extends javax.swing.JFrame {
     }//GEN-LAST:event_btncloseActionPerformed
 
     private void btnsaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnsaveActionPerformed
-if(txtid.getText().equals("")){
-    JOptionPane.showMessageDialog(this, "All field is required");
-    txtid.requestFocus();// TODO add your handling code here:
-}
-else if(txtname.getText().equals("")){
-    JOptionPane.showMessageDialog(this, "All field is required");
-    txtname.requestFocus();// TODO add your handling code here:
-}
-else if(txtcourse.getText().equals("")){
-    JOptionPane.showMessageDialog(this, "All field is required");
-    txtcourse.requestFocus();// TODO add your handling code here:
-}
-else if(txtbranch.getText().equals("")){
-    JOptionPane.showMessageDialog(this, "All field is required");
-    txtbranch.requestFocus();// TODO add your handling code here:
-}
-else if(txtsem.getText().equals("")){
-    JOptionPane.showMessageDialog(this, "All field is required");
-    txtsem.requestFocus();// TODO add your handling code here:
-}
-else{
+// 🔹 Field validation
+    if (txtid.getText().equals("")) {
+        JOptionPane.showMessageDialog(this, "All fields are required");
+        txtid.requestFocus();
+        return;
+    }
+    if (txtname.getText().equals("")) {
+        JOptionPane.showMessageDialog(this, "All fields are required");
+        txtname.requestFocus();
+        return;
+    }
+    if (txtcourse.getText().equals("")) {
+        JOptionPane.showMessageDialog(this, "All fields are required");
+        txtcourse.requestFocus();
+        return;
+    }
+    if (txtbranch.getText().equals("")) {
+        JOptionPane.showMessageDialog(this, "All fields are required");
+        txtbranch.requestFocus();
+        return;
+    }
+    if (txtsem.getText().equals("")) {
+        JOptionPane.showMessageDialog(this, "All fields are required");
+        txtsem.requestFocus();
+        return;
+    }
+
     try {
         Connection con = Connect.Connection();
-        PreparedStatement pst = con.prepareStatement("INSERT INTO STUDENT(id, name, course, branch, semester) VALUES(?,?,?,?,?)");
+
+        // 🔍 Check duplicate Student ID
+        PreparedStatement check = con.prepareStatement(
+            "SELECT id FROM student WHERE id = ?"
+        );
+        check.setString(1, txtid.getText());
+        ResultSet rs = check.executeQuery();
+
+        if (rs.next()) {
+            JOptionPane.showMessageDialog(this, "Student ID already exists!");
+            txtid.requestFocus();
+            return;
+        }
+
+        // ✅ Insert student
+        PreparedStatement pst = con.prepareStatement(
+            "INSERT INTO student(id, name, course, branch, semester) VALUES(?,?,?,?,?)"
+        );
         pst.setString(1, txtid.getText());
         pst.setString(2, txtname.getText());
         pst.setString(3, txtcourse.getText());
         pst.setString(4, txtbranch.getText());
-        pst.setString(5, txtsem.getText());
-        int row = pst.executeUpdate();
-        if(row > 0){
-        JOptionPane.showMessageDialog(this, "Record Saved");
+        pst.setInt(5, Integer.parseInt(txtsem.getText()));
+
+        pst.executeUpdate();
+
+        JOptionPane.showMessageDialog(this, "Student Registered Successfully");
+
+        // 🧹 Clear fields
         txtid.setText("");
         txtname.setText("");
         txtcourse.setText("");
         txtbranch.setText("");
         txtsem.setText("");
-        }
-        else{
-            JOptionPane.showMessageDialog(this, "Record Not Saved");
-        }
+
+        txtid.requestFocus();
+
+    } catch (SQLIntegrityConstraintViolationException ex) {
+        JOptionPane.showMessageDialog(this, "Student ID already exists!");
     } catch (SQLException ex) {
-        Logger.getLogger(StudentRegistration.class.getName()).log(Level.SEVERE, null, ex);
+        JOptionPane.showMessageDialog(this, ex.getMessage());
+        ex.printStackTrace();
     }
-}
+
     }//GEN-LAST:event_btnsaveActionPerformed
 
     /**
